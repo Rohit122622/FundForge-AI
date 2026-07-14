@@ -1,147 +1,246 @@
-# FundForge AI — AI-Powered Grant & Funding Finder
+# FundForge AI 🚀
+### AI-Powered Grant & Funding Discovery Platform for Indian Startups
 
-FundForge AI is a production-grade, AI-powered platform for discovering government grants, evaluating eligibility, and generating tailored funding proposals for Indian startups.
+> Discover government grants, evaluate eligibility with precision scoring, and generate tailored funding proposals — powered by IBM Granite AI with a 3-provider fallback chain.
 
-This guide provides absolute step-by-step instructions to get the platform up and running locally or in production.
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.x-000000?style=flat-square&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://postgresql.org/)
+[![IBM watsonx](https://img.shields.io/badge/IBM-watsonx.ai-BE95FF?style=flat-square&logo=ibm&logoColor=white)](https://www.ibm.com/watsonx)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 
----
+<br>
 
-## 🏗️ Project Architecture
+## Table of Contents
+
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Prerequisites](#prerequisites)
+- [Getting Started](#getting-started)
+- [Environment Variables](#environment-variables)
+- [Database Setup](#database-setup)
+- [Running the Application](#running-the-application)
+- [Production Build](#production-build)
+- [Running Tests](#running-tests)
+- [API Reference](#api-reference)
+- [Demo Walkthrough](#demo-walkthrough)
+- [Project Structure](#project-structure)
+- [Troubleshooting](#troubleshooting)
+- [Contact](#contact)
+
+<br>
+
+## Overview
+
+FundForge AI is a production-grade fullstack platform that solves a critical problem for Indian startups: **finding and winning the right government grants**. The platform combines a curated grant registry, a rules-based eligibility scoring engine, and IBM Granite AI-powered proposal generation with RAG (Retrieval-Augmented Generation) to produce structured, tailored funding proposals.
+
+The AI layer is resilient by design — if IBM watsonx is unavailable, the system automatically falls over to Google Gemini, then Grok/Llama, with real-time telemetry tracking which provider is active.
+
+<br>
+
+## Architecture
 
 ```
                  React (Vite) Frontend [SPA]
                               │
-                              ▼ (HTTP Nginx Proxy)
+                              ▼ (HTTP / Nginx Reverse Proxy)
                      Flask Backend API
                               │
         ┌─────────────────────┼─────────────────────┐
         ▼                     ▼                     ▼
   Authentication     Eligibility Engine     Proposal Generator
-  (JWT, bcrypt)        (Rules-based)         (IBM Granite AI)
+  (JWT + bcrypt)      (Rules-based)         (IBM Granite AI)
         │                     │                     │
         ▼                     ▼                     ▼
   PostgreSQL DB          RAG Engine        AI Fallback Chain
- (SQLAlchemy ORM)     (watsonx Index)     (IBM ➔ Gemini ➔ Grok)
+ (SQLAlchemy ORM)    (watsonx Index)    IBM → Gemini → Grok
 ```
 
----
+### AI Fallback Chain
 
-## 📋 1. Prerequisites
+The platform uses a 3-tier AI provider chain with automatic failover and instant recovery:
 
-Before starting, ensure you have the following software installed:
+```
+Request → IBM watsonx (Primary)
+               │ Failure
+               ▼
+          Google Gemini (Secondary)
+               │ Failure
+               ▼
+          Grok / Llama via Groq (Tertiary)
+```
 
-* **Git**: To clone and manage code.
-* **Python**: Version `3.11` or higher.
-* **Node.js**: Version `18.0.0` or higher.
-* **npm**: Version `9.0.0` or higher (installed automatically with Node.js).
-* **IBM Cloud Account** (Optional): Required if utilizing Granite as primary inference.
-* **Gemini API Key**: Required for fallback generation (obtainable from Google AI Studio).
-* **Grok API Key**: Required for tertiary fallback generation (obtainable from Groq Console).
+Provider status, failover events, and response times are tracked live via `GET /api/v1/system/ai-status`.
 
----
+<br>
 
-## 📥 2. Cloning the Project
+## Features
 
-Open your terminal or command prompt and execute:
+| Feature | Description |
+|---------|-------------|
+| **Grant Discovery** | Paginated, searchable catalog of government grants curated for Indian startups |
+| **Eligibility Scoring** | Rules-based engine that scores startup profile against grant criteria with a readiness percentage |
+| **AI Proposal Generation** | IBM Granite AI + RAG retrieves semantic startup context and drafts a structured markdown proposal |
+| **PDF Export** | Compiles generated proposals into a formatted downloadable PDF |
+| **Application Tracker** | FSM-based tracker with state transitions: SAVED → RESEARCHING → IN_PROGRESS |
+| **AI Telemetry** | Real-time visibility into active AI provider, failover events, and response times |
+| **JWT Auth** | Stateless authentication with access and refresh token support |
+| **3-Provider Fallback** | Automatic failover across IBM → Gemini → Grok with zero manual intervention |
+
+<br>
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | React 18, Vite, React Router |
+| **Backend** | Python 3.11+, Flask, SQLAlchemy ORM |
+| **Database** | PostgreSQL (production), SQLite (local dev) |
+| **Auth** | JWT (access + refresh tokens), bcrypt |
+| **AI Primary** | IBM watsonx.ai — Granite model |
+| **AI Fallback** | Google Gemini, Grok via Groq Cloud |
+| **RAG** | watsonx Vector Index |
+| **Caching / Queue** | Redis, Celery |
+| **Proxy / Static** | Nginx (production) |
+| **Testing** | pytest (13 tests across 4 modules) |
+
+<br>
+
+## Prerequisites
+
+Before starting, ensure you have the following installed:
+
+| Tool | Version | Notes |
+|------|---------|-------|
+| Git | Any | For cloning the repository |
+| Python | 3.11+ | Required for backend |
+| Node.js | 18.0.0+ | Required for frontend |
+| npm | 9.0.0+ | Bundled with Node.js |
+| Redis | Any | Required for caching and Celery |
+| PostgreSQL | 14+ | Required for production; SQLite used locally |
+
+**API Keys required:**
+
+- **IBM Cloud** *(optional)* — for IBM Granite as primary AI provider
+- **Google Gemini** — secondary AI fallback ([Google AI Studio](https://aistudio.google.com/))
+- **Groq Cloud** — tertiary AI fallback ([Groq Console](https://console.groq.com/))
+
+<br>
+
+## Getting Started
+
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/your-org/FundForge-AI.git
 cd FundForge-AI
 ```
 
----
+### 2. Create and Activate Python Virtual Environment
 
-## 🐍 3. Backend Setup
-
-### Step A: Create and Activate Virtual Environment
-Run the commands from the **project root directory**:
-
-**On Windows (PowerShell):**
-```powershell
-python -m venv venv
-venv\Scripts\Activate.ps1
-```
-
-**On Linux / macOS:**
+**Linux / macOS:**
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-### Step B: Install Python dependencies
-Install all package requirements inside the activated virtual environment:
+**Windows (PowerShell):**
+```powershell
+python -m venv venv
+venv\Scripts\Activate.ps1
+```
+
+> **Windows tip:** If you hit an execution policy error, run PowerShell as Administrator and execute:
+> ```powershell
+> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine
+> ```
+
+### 3. Install Backend Dependencies
+
 ```bash
 pip install -r backend/requirements.txt
 ```
 
-### Step C: Environment Configuration
-Copy the sample environment file to `.env` in the **project root folder**:
+### 4. Configure Environment Variables
+
 ```bash
 cp .env.example .env
 ```
 
-Open `.env` and fill in the configuration variables.
+Open `.env` and populate all required fields. See the [Environment Variables](#environment-variables) section below.
 
-#### Environment Variables Reference
+<br>
 
-| Variable | Description | Example / Recommended Value |
-|---|---|---|
-| `FLASK_ENV` | Running environment mode (`development`, `production`, `testing`) | `development` |
-| `FLASK_SECRET_KEY` | Flask session cookie signing secret | *Create a secure random string* |
-| `JWT_SECRET` | Secret key used to sign JWT Access/Refresh tokens | *Create a secure random string* |
-| `DATABASE_URL` | SQLAlchemy Database connection string | `sqlite:///instance/fundforge.db` (for local dev) |
-| `REDIS_URL` | Redis server connection string (caching & celery task broker) | `redis://localhost:6379/0` |
-| `IBM_API_KEY` | IBM watsonx.ai Cloud API key | `OdvxVIMDwheMwyVeN...` |
-| `IBM_PROJECT_ID` | Project GUID linked to watsonx workspace | `8a219719-a8b5-4c0e-...` |
-| `IBM_URL` | IBM Cloud Watson inference URL | `https://us-south.ml.cloud.ibm.com` |
+## Environment Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `FLASK_ENV` | Runtime mode (`development`, `production`, `testing`) | `development` |
+| `FLASK_SECRET_KEY` | Flask session signing secret | Secure random string |
+| `JWT_SECRET` | JWT access/refresh token signing key | Secure random string |
+| `DATABASE_URL` | SQLAlchemy connection string | `sqlite:///instance/fundforge.db` |
+| `REDIS_URL` | Redis connection string | `redis://localhost:6379/0` |
+| `IBM_API_KEY` | IBM watsonx.ai API key | `OdvxVIMDwheMwyVeN...` |
+| `IBM_PROJECT_ID` | IBM watsonx workspace project GUID | `8a219719-a8b5-4c0e-...` |
+| `IBM_URL` | IBM Cloud inference endpoint | `https://us-south.ml.cloud.ibm.com` |
 | `GEMINI_API_KEY` | Google Gemini API key (secondary fallback) | `AIzaSyDG-_voPS0xD...` |
-| `GROQ_API_KEY` | Groq Cloud API Key (tertiary Grok/Llama fallback) | `gsk_CJyWdxjHjR8vl...` |
+| `GROQ_API_KEY` | Groq Cloud API key (tertiary fallback) | `gsk_CJyWdxjHjR8vl...` |
 
----
+<br>
 
-## 🗄️ 4. Database Setup & Migrations
+## Database Setup
 
-FundForge AI uses SQLAlchemy ORM to manage database structures and support both local **SQLite** and production-grade **PostgreSQL**.
+### Local Development (SQLite — Default)
 
-### Option A: Local SQLite (Default)
-When using the SQLite database (`sqlite:///instance/fundforge.db`):
-- The database file is created automatically inside the `instance/` folder on first start.
-- Run database migrations to construct the tables:
-  ```bash
-  flask --app backend.wsgi db upgrade
-  ```
+The database file is created automatically inside `instance/` on first run. Just run migrations:
 
-### Option B: Production PostgreSQL
-When deploying with PostgreSQL:
-1. Initialize the PostgreSQL server and create a database named `fundforge_db`:
-   ```sql
-   CREATE DATABASE fundforge_db;
-   ```
-2. Set the `DATABASE_URL` in `.env`:
-   ```env
-   DATABASE_URL=postgresql://<user>:<password>@localhost:5432/fundforge_db
-   ```
-3. Run the migrations to synchronize schemas:
-   ```bash
-   flask --app backend.wsgi db upgrade
-   ```
-
----
-
-## 🚀 5. Running the Backend Server
-
-To start the backend, execute the following command from the **project root dir
+```bash
+flask --app backend.wsgi db upgrade
 ```
 
-### Why is this the correct command?
-1. **Absolute Packages**: The backend python code uses package-absolute imports (e.g. `from backend.app import ...`). Running `python wsgi.py` from inside the `backend` folder will crash with a `ModuleNotFoundError` because Python is unaware of the parent path. Executing `python -m backend.wsgi` from the root injects the workspace root folder into `sys.path`.
-2. **WSGI Entry Point**: `backend/app.py` implements the Flask Application Factory pattern, exposing `create_app()`. It does not execute a server when run directly. `backend/wsgi.py` initializes the app and executes the development server on `http://localhost:5000`.
+### Production (PostgreSQL)
 
----
+1. Create the database:
 
-## 💻 6. Frontend Setup
+```sql
+CREATE DATABASE fundforge_db;
+```
 
-Open a new terminal window, navigate to the frontend folder, and launch the Vite development server:
+2. Set `DATABASE_URL` in `.env`:
+
+```env
+DATABASE_URL=postgresql://<user>:<password>@localhost:5432/fundforge_db
+```
+
+3. Run migrations:
+
+```bash
+flask --app backend.wsgi db upgrade
+```
+
+<br>
+
+## Running the Application
+
+### Backend
+
+Run from the **project root directory** (not inside `/backend`):
+
+```bash
+python -m backend.wsgi
+```
+
+> **Why `-m backend.wsgi`?** The backend uses package-absolute imports (e.g. `from backend.app import ...`). Running from inside the `backend/` folder causes `ModuleNotFoundError` because Python won't find the parent package. The `-m` flag injects the workspace root into `sys.path` correctly.
+
+Backend runs at: `http://localhost:5000`
+
+### Frontend
+
+Open a **new terminal**, then:
 
 ```bash
 cd frontend
@@ -149,153 +248,191 @@ npm install
 npm run dev
 ```
 
-* The dev server will spin up on default Vite port: **`http://localhost:5173`**
-* Requests targeting `/api/v1` are automatically proxied to the Flask server at `http://localhost:5000` via configuration in `vite.config.js`.
+Frontend runs at: `http://localhost:5173`
 
----
+> API calls to `/api/v1` are automatically proxied to `http://localhost:5000` via `vite.config.js` — no manual CORS setup needed in development.
 
-## 📦 7. Production Build
+<br>
 
-To compile and bundle frontend assets for production:
+## Production Build
 
 ```bash
 cd frontend
 npm run build
 ```
 
-* **Output Folder**: High-performance, minified static files are generated in `frontend/dist/`.
-* In production, the Nginx web server serves these static assets directly and reverse-proxies `/api/v1` traffic to the backend Gunicorn sockets.
+Minified static assets are output to `frontend/dist/`. In production, Nginx serves these directly and reverse-proxies `/api/v1` traffic to Gunicorn.
 
----
+<br>
 
-## 🧪 8. Running Tests
+## Running Tests
 
-### Backend Unit & Integration Tests
-Ensure your virtual environment is active and run:
+Ensure your virtual environment is active, then from the project root:
+
 ```bash
 python -m pytest
 ```
 
-This runs the complete suite of **13 tests** covering:
-- User authentication and permissions validation (`tests/test_auth.py`)
-- Curated grants catalog retrieval and queries (`tests/test_grants.py`)
-- Application Tracker FSM state transition validation (`tests/test_tracker.py`)
-- AI provider fallback manager failovers (`tests/test_ai_fallback.py`)
+The test suite covers 13 tests across 4 modules:
 
-### Frontend Tests
-Currently, no frontend component tests are configured. Build checks are validated via `npm run build` during CI runs.
+| Test File | Coverage |
+|-----------|----------|
+| `tests/test_auth.py` | User authentication and permission validation |
+| `tests/test_grants.py` | Grant catalog retrieval and query filtering |
+| `tests/test_tracker.py` | Application tracker FSM state transitions |
+| `tests/test_ai_fallback.py` | AI provider failover chain validation |
 
----
+<br>
 
-## 🚶‍♂️ 9. End-to-End Demo Walkthrough
+## API Reference
 
-Follow this sequence to test and verify all platform capabilities:
+All JWT-protected endpoints require an `Authorization: Bearer <token>` header.
 
-1. **Register an Account**: Go to `http://localhost:5173/register` and create an account.
-2. **Login**: Authenticate at `http://localhost:5173/login` to obtain your JWT token.
-3. **Build Startup Profile**: Complete the onboarding form, entering details such as founding year, sector, stage, and descriptions.
-4. **Discover curations**: Search/filter the catalog on the Grant Explorer page.
-5. **Evaluate Eligibility**: Choose a grant (e.g. `Startup India Seed Fund Scheme`) and trigger the Eligibility Checker. You will receive a score card showing matching criteria and a final readiness percentage.
-6. **Generate Proposal**: Click "Generate Proposal". The system uses RAG to retrieve semantic startup context and drafts a structured markdown grant proposal.
-7. **Download PDF Report**: Click "Download PDF" to request the PDF compiler, which packages the proposal details into a structured document.
-8. **Track Application State**: Click "Track Application". Enters the application tracking system at the `SAVED` state. Transition it to `RESEARCHING`, then `IN_PROGRESS`.
-9. **Test AI Failover Chain**:
-   - Temporarily modify your `.env` or configuration to supply an invalid `IBM_API_KEY` (simulating quota limit/quota exhausted).
-   - Generate a proposal again.
-   - Look at the terminal backend log; it shows the transition block:
-     `[WARNING] IBM watsonx failed, trying Gemini fallback.`
-     It then queries Gemini and finishes successfully.
-10. **Query AI Telemetry**:
-    - Hit `GET /api/v1/system/ai-status` in your browser or Postman.
-    - Expected output:
-      ```json
-      {
-        "success": true,
-        "data": {
-          "current_primary_provider": "Gemini",
-          "last_active_provider": "Gemini",
-          "fallback_used": true,
-          "response_time_ms": 1420.5
-        }
-      }
-      ```
-    - Restore your correct `IBM_API_KEY` in `.env`.
-    - Trigger another proposal. The telemetry status reverts to `"IBM"` as primary automatically, proving instant recovery.
+### Auth
 
----
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/api/v1/auth/register` | Public | Register a new user account |
+| `POST` | `/api/v1/auth/login` | Public | Authenticate and receive JWT tokens |
 
-## 🗺️ 10. API Endpoints Reference
+### Grants
 
-| Verb | Path | Auth | Description |
-|---|---|---|---|
-| `POST` | `/api/v1/auth/register` | Public | Register a new user |
-| `POST` | `/api/v1/auth/login` | Public | Authenticate user & retrieve JWTs |
-| `GET` | `/api/v1/grants/` | Public | Paginated list of grants with search |
-| `GET` | `/api/v1/grants/<id>` | Public | Retrieve single grant catalog details |
-| `POST` | `/api/v1/grants/recommend` | JWT | Get matched list |
-| `POST` | `/api/v1/eligibility/check` | JWT | Check startup match criteria |
-| `POST` | `/api/v1/proposals/generate` | JWT | Generate AI draft with RAG |
-| `GET` | `/api/v1/tracker/` | JWT | List active tracked applications |
-| `POST` | `/api/v1/tracker/<id>/transition` | JWT | Execute FSM status transition |
-| `POST` | `/api/v1/documents/generate-pdf` | JWT | Package a proposal as a PDF |
-| `GET` | `/api/v1/system/ai-status` | Public | Expose fallback metrics and health |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/v1/grants/` | Public | Paginated grant list with search and filters |
+| `GET` | `/api/v1/grants/<id>` | Public | Single grant details |
+| `POST` | `/api/v1/grants/recommend` | JWT | Get grants matched to startup profile |
 
----
+### Eligibility & Proposals
 
-## 🔧 11. Troubleshooting
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/api/v1/eligibility/check` | JWT | Score startup eligibility against a grant |
+| `POST` | `/api/v1/proposals/generate` | JWT | Generate AI proposal draft with RAG |
+| `POST` | `/api/v1/documents/generate-pdf` | JWT | Compile proposal into a downloadable PDF |
 
-### 1. `ModuleNotFoundError: No module named 'backend'`
-* **Cause**: Running commands from inside the `backend` subdirectory.
-* **Fix**: Navigate back to the parent directory (`cd ..`) and execute python commands using the `-m` module flag, e.g., `python -m backend.wsgi`.
+### Tracker
 
-### 2. PowerShell script execution disabled
-* **Cause**: Windows Execution Policy prevents loading PS scripts.
-* **Fix**: Run PowerShell as Administrator and execute:
-  ```powershell
-  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine
-  ```
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/v1/tracker/` | JWT | List all tracked applications |
+| `POST` | `/api/v1/tracker/<id>/transition` | JWT | Execute FSM state transition |
 
-### 3. Missing env variables / Config crashes
-* **Cause**: `.env` file not created or not populated with mandatory fields.
-* **Fix**: Ensure `cp .env.example .env` was run in the root directory, and verify keys are correctly filled.
+### System
 
-### 4. Gunicorn or Python port 5000/5173 already in use
-* **Cause**: Another service is occupying the port.
-* **Fix**: Find and kill the process:
-  - **Windows**: `Stop-Process -Id (Get-NetTCPConnection -LocalPort 5000).OwningProcess`
-  - **Linux/macOS**: `kill -9 $(lsof -t -i:5000)`
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/v1/system/ai-status` | Public | AI provider telemetry and fallback metrics |
 
-### 5. CORS Errors
-* **Cause**: Frontend tries to communicate with Backend at a host/port mismatch without options header allowances.
-* **Fix**: Ensure the `CORS(app)` configurations are intact in `backend/app.py` and that the Vite configuration proxies calls to the correct port.
+**Sample AI status response:**
 
----
+```json
+{
+  "success": true,
+  "data": {
+    "current_primary_provider": "Gemini",
+    "last_active_provider": "Gemini",
+    "fallback_used": true,
+    "response_time_ms": 1420.5
+  }
+}
+```
 
-## 📂 12. Project Directory Structure
+<br>
+
+## Demo Walkthrough
+
+Follow this sequence to verify all platform capabilities end-to-end:
+
+1. **Register** at `http://localhost:5173/register`
+2. **Login** at `http://localhost:5173/login` to receive your JWT
+3. **Build Startup Profile** — complete onboarding with sector, stage, founding year, and description
+4. **Explore Grants** — browse and filter the Grant Explorer catalog
+5. **Check Eligibility** — select a grant (e.g. Startup India Seed Fund Scheme) and run the eligibility checker to see your score and readiness percentage
+6. **Generate Proposal** — click Generate Proposal; RAG retrieves startup context and drafts a structured markdown proposal
+7. **Download PDF** — package the proposal into a formatted PDF report
+8. **Track Application** — enter the tracker at `SAVED`, then transition to `RESEARCHING` → `IN_PROGRESS`
+9. **Test AI Failover** — set an invalid `IBM_API_KEY` in `.env`, regenerate a proposal, and observe the terminal log:
+```
+   [WARNING] IBM watsonx failed, trying Gemini fallback.
+```
+10. **Check Telemetry** — hit `GET /api/v1/system/ai-status` to confirm `"current_primary_provider": "Gemini"`
+11. **Restore IBM Key** — restore your valid key, regenerate, and confirm telemetry reverts to IBM automatically
+
+<br>
+
+## Project Structure
 
 ```
 FundForge-AI/
-├── backend/                   # Flask Server Application Code
-│   ├── config/                # Environment configuration & settings
-│   ├── controllers/           # API controllers (Auth, Grants, Proposals, System)
-│   ├── database/              # DB setup, session manager, schema
-│   ├── eligibility/           # Rules evaluation & scoring algorithm
-│   ├── grant_engine/          # Curated grant registry database
-│   ├── ibm/                   # AI Provider interface (Granite, Fallback manager)
-│   ├── models/                # SQLAlchemy database models
-│   ├── proposal_generator/    # Proposal document templating engine
-│   ├── rag/                   # watsonx vector store integration
-│   ├── routes/                # Blueprint URL router setup
-│   ├── utils/                 # PDF compilers, JWT, response envelope helpers
-│   ├── requirements.txt       # Python backend dependencies list
-│   └── wsgi.py                # Core entry point python file
-├── frontend/                  # React SPA Client Code (Vite)
+├── backend/
+│   ├── config/               # Environment config and settings
+│   ├── controllers/          # API controllers (Auth, Grants, Proposals, System)
+│   ├── database/             # DB setup, session manager, schema
+│   ├── eligibility/          # Rules evaluation and scoring engine
+│   ├── grant_engine/         # Curated grant registry
+│   ├── ibm/                  # IBM Granite interface and fallback manager
+│   ├── models/               # SQLAlchemy ORM models
+│   ├── proposal_generator/   # Proposal document templating engine
+│   ├── rag/                  # watsonx vector store integration
+│   ├── routes/               # Flask Blueprint URL routers
+│   ├── utils/                # PDF compiler, JWT helpers, response envelopes
+│   ├── requirements.txt      # Python dependencies
+│   └── wsgi.py               # Application entrypoint
+│
+├── frontend/
 │   ├── src/
-│   │   ├── components/        # Reusable UI component blocks
-│   │   ├── contexts/          # Context stores (Auth, Theme, Toasts)
-│   │   ├── services/          # HTTP API client services
-│   │   ├── pages/             # Route page views (Landing, Proposal builder)
-│   │   └── App.jsx            # React route configurations
-│   └── vite.config.js         # Vite dev configuration & API Proxy rule
-└── docs/                      # Technical references & architecture guides
+│   │   ├── components/       # Reusable UI component blocks
+│   │   ├── contexts/         # Auth, Theme, Toast context stores
+│   │   ├── services/         # HTTP API client services
+│   │   ├── pages/            # Route page views (Landing, Proposal Builder)
+│   │   └── App.jsx           # React route configuration
+│   └── vite.config.js        # Vite dev config and API proxy rule
+│
+├── docs/                     # Technical references and architecture guides
+├── tests/                    # pytest test suite
+├── .env.example              # Environment variable template
+└── README.md
 ```
+
+<br>
+
+## Troubleshooting
+
+**`ModuleNotFoundError: No module named 'backend'`**
+Run from the project root, not inside `/backend`. Use `python -m backend.wsgi`, not `python wsgi.py`.
+
+**PowerShell execution policy error on Windows**
+Run PowerShell as Administrator and execute:
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine
+```
+
+**`.env` variables not loading / config crashes**
+Ensure you ran `cp .env.example .env` from the project root and all mandatory fields are populated.
+
+**Port 5000 or 5173 already in use**
+
+Linux/macOS:
+```bash
+kill -9 $(lsof -t -i:5000)
+```
+Windows:
+```powershell
+Stop-Process -Id (Get-NetTCPConnection -LocalPort 5000).OwningProcess
+```
+
+**CORS errors in browser**
+Ensure `CORS(app)` is configured in `backend/app.py` and Vite is proxying `/api/v1` to `http://localhost:5000` in `vite.config.js`.
+
+<br>
+
+## Contact
+
+**Developer:** Rohit Posimsetti
+**Email:** rohit122622@gmail.com
+**GitHub:** [@Rohit122622](https://github.com/Rohit122622)
+
+<br>
+
+<p align="center">Distributed under the <strong>MIT License</strong>. See <a href="LICENSE">LICENSE</a> for details.</p>
