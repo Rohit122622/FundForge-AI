@@ -1,0 +1,210 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "FundForge AI API",
+    "version": "1.0.0",
+    "description": "AI-Powered Grant & Funding Finder for Indian Startups, integrated with IBM watsonx.ai (Granite), Gemini, and Grok."
+  },
+  "servers": [
+    {
+      "url": "/api/v1",
+      "description": "API Version 1"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "summary": "Register a new user",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password", "first_name"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string", "minLength": 8 },
+                  "first_name": { "type": "string" },
+                  "last_name": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "User created successfully" }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Authenticate user and get tokens",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login successful" }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "Revoke authentication session",
+        "responses": {
+          "200": { "description": "Logout successful" }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "summary": "Get authenticated user profile details",
+        "responses": {
+          "200": { "description": "User profile returned" }
+        }
+      }
+    },
+    "/grants": {
+      "get": {
+        "summary": "List or search grants",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "per_page", "in": "query", "schema": { "type": "integer", "default": 20 } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "sector", "in": "query", "schema": { "type": "string" } },
+          { "name": "stage", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "List of matching grants" }
+        }
+      }
+    },
+    "/grants/recommend": {
+      "post": {
+        "summary": "Get AI-powered grant recommendations tailored to a startup",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["startup_profile"],
+                "properties": {
+                  "startup_profile": { "type": "object" },
+                  "top_n": { "type": "integer", "default": 5 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Recommended grants lists" }
+        }
+      }
+    },
+    "/proposals/generate": {
+      "post": {
+        "summary": "Generate a full grant proposal using AI",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["grant_id", "startup_profile"],
+                "properties": {
+                  "grant_id": { "type": "string" },
+                  "startup_profile": { "type": "object" },
+                  "tone": { "type": "string", "default": "professional" },
+                  "user_instructions": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Draft proposal generated" }
+        }
+      }
+    },
+    "/profile": {
+      "get": {
+        "summary": "Get current user's startup profile",
+        "responses": {
+          "200": { "description": "Startup profile details" }
+        }
+      },
+      "post": {
+        "summary": "Create user's startup profile",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "required": ["company_name"] }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Startup profile created" }
+        }
+      }
+    },
+    "/tracker": {
+      "get": {
+        "summary": "List tracked applications",
+        "responses": {
+          "200": { "description": "Paginated list of applications" }
+        }
+      },
+      "post": {
+        "summary": "Track a new grant application",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["startup_id", "grant_id"],
+                "properties": {
+                  "startup_id": { "type": "string" },
+                  "grant_id": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Tracking initialized" }
+        }
+      }
+    }
+  }
+}
