@@ -67,25 +67,32 @@ FundForge AI is a production-grade fullstack platform that solves a critical cha
 ## Screenshots
 
 ### Landing Page
-*(Add Screenshot Here)*
+<img width="1917" height="1093" alt="image" src="https://github.com/user-attachments/assets/7e903a39-0d92-4007-ae9a-0eb5ac02424e" />
+
 
 ### Dashboard
-*(Add Screenshot Here)*
+<img width="1917" height="1091" alt="image" src="https://github.com/user-attachments/assets/0e9504df-9028-45f0-ad0b-414a4c994f2e" />
+
 
 ### Grant Explorer
-*(Add Screenshot Here)*
+<img width="1917" height="1087" alt="image" src="https://github.com/user-attachments/assets/07386d9a-2842-451f-856f-f0a4c35cc011" />
+
 
 ### Eligibility Checker
-*(Add Screenshot Here)*
+<img width="1917" height="1095" alt="image" src="https://github.com/user-attachments/assets/4fb6b62f-7ce3-4b4b-b3b7-bf13b142272b" />
+
 
 ### Proposal Generator
-*(Add Screenshot Here)*
+<img width="1917" height="1086" alt="image" src="https://github.com/user-attachments/assets/d2ab1335-73cb-436f-9a72-3af5a2b257e2" />
+
 
 ### Application Tracker
-*(Add Screenshot Here)*
+<img width="1917" height="1088" alt="image" src="https://github.com/user-attachments/assets/c458edee-7144-4b4e-8186-6a7b0e0c6d84" />
+
 
 ### AI Telemetry
-*(Add Screenshot Here)*
+<img width="1917" height="1086" alt="image" src="https://github.com/user-attachments/assets/30ed95b3-cbb8-4df4-92f9-624fcd793734" />
+
 
 <br>
 
